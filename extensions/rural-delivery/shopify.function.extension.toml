@@ -1,0 +1,23 @@
+api_version = "2025-07"
+
+[[extensions]]
+name = "Rural Delivery"
+handle = "rural-delivery"
+type = "delivery_customization"
+
+description = "Hide non-rural shipping methods for configured rural postcodes"
+
+  [[extensions.targeting]]
+  target = "cart.delivery-options.transform.run"
+  input_query = "input.graphql"
+  export = "cart-delivery-options-transform-run"
+
+  [extensions.build]
+  command = ""
+  path = "dist/function.wasm"
+
+  [extensions.ui.paths]
+  create = "/"
+  details = "/"
+
+

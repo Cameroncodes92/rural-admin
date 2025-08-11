@@ -1,0 +1,21 @@
+query RunInput {
+  deliveryCustomization {
+    metafield(namespace: "rural_shipping", key: "config") {
+      value
+    }
+  }
+  cart {
+    deliveryGroups {
+      deliveryAddress {
+        countryCode
+        zip
+      }
+      deliveryOptions {
+        handle
+        title
+      }
+    }
+  }
+}
+
+

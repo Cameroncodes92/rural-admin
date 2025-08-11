@@ -1,0 +1,36 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "caa2348bbfae6ba410dc6ce2a89ae657"
+name = "rural-admin"
+handle = "rural-admin"
+application_url = "https://hazards-horse-dubai-biographies.trycloudflare.com"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2025-07"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "write_products,read_delivery_customizations,write_delivery_customizations"
+
+[auth]
+redirect_urls = [
+  "https://hazards-horse-dubai-biographies.trycloudflare.com/auth/callback",
+  "https://hazards-horse-dubai-biographies.trycloudflare.com/auth/shopify/callback",
+  "https://hazards-horse-dubai-biographies.trycloudflare.com/api/auth/callback"
+]
+
+[pos]
+embedded = false
