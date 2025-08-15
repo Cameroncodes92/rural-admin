@@ -3,7 +3,7 @@
 client_id = "caa2348bbfae6ba410dc6ce2a89ae657"
 name = "rural-admin"
 handle = "rural-admin"
-application_url = "https://hazards-horse-dubai-biographies.trycloudflare.com"
+application_url = "https://cannon-cf-eh-asked.trycloudflare.com"
 embedded = true
 
 [build]
@@ -27,9 +27,9 @@ scopes = "write_products,read_delivery_customizations,write_delivery_customizati
 
 [auth]
 redirect_urls = [
-  "https://hazards-horse-dubai-biographies.trycloudflare.com/auth/callback",
-  "https://hazards-horse-dubai-biographies.trycloudflare.com/auth/shopify/callback",
-  "https://hazards-horse-dubai-biographies.trycloudflare.com/api/auth/callback"
+  "https://cannon-cf-eh-asked.trycloudflare.com/auth/callback",
+  "https://cannon-cf-eh-asked.trycloudflare.com/auth/shopify/callback",
+  "https://cannon-cf-eh-asked.trycloudflare.com/api/auth/callback"
 ]
 
 [pos]
