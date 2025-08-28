@@ -38,6 +38,34 @@ function normalize(list) {
 }
 
 /**
+ * Normalize a postcode by lowercasing and removing non-alphanumeric chars
+ * @param {string|undefined|null} s
+ */
+function normalizeZip(s) {
+  if (!s) return "";
+  return String(s).toLowerCase().replace(/[^a-z0-9]/g, "").trim();
+}
+
+/**
+ * Expand and normalize configured postcode entries. Handles entries that
+ * accidentally contain multiple postcodes separated by spaces/dots/hyphens/etc.
+ * @param {string[]|undefined} entries
+ */
+function expandNormalizedPostcodes(entries) {
+  if (!Array.isArray(entries)) return [];
+  const out = [];
+  for (const entry of entries) {
+    const parts = String(entry)
+      .toLowerCase()
+      .split(/[^a-z0-9]+/g)
+      .map((p) => normalizeZip(p))
+      .filter(Boolean);
+    out.push(...parts);
+  }
+  return out;
+}
+
+/**
  * The configured entrypoint for the 'cart.delivery-options.transform.run' target.
  * Implements rural filtering logic per requirements.
  * @param {RunInput} input
@@ -48,9 +76,8 @@ export function cartDeliveryOptionsTransformRun(input) {
   const enabled = Boolean(config.enabled);
   if (!enabled) return NO_CHANGES;
 
-  // Read configured lists independently
-  const configuredCountryCodes = normalize(Array.isArray(config.countryCodes) ? config.countryCodes : []);
-  const configuredPostcodes = normalize(Array.isArray(config.postcodes) ? config.postcodes : []);
+  // Read configured lists (postcode-only activation; country codes ignored)
+  const configuredPostcodes = expandNormalizedPostcodes(Array.isArray(config.postcodes) ? config.postcodes : []);
   const methodsToKeep = normalize(config.ruralMethodsToKeep);
 
   const groups = input?.cart?.deliveryGroups || [];
@@ -59,35 +86,43 @@ export function cartDeliveryOptionsTransformRun(input) {
   // Consider first delivery group for address context (common in examples)
   const destinationAddress = groups[0]?.deliveryAddress || {};
   const destinationCountry = destinationAddress?.countryCode;
-  const destinationZip = destinationAddress?.zip;
+  const destinationZip = normalizeZip(destinationAddress?.zip);
 
-  // Determine rural status by either configured country codes OR specific postcodes
-  const isRuralByCountry =
-    configuredCountryCodes.length > 0 &&
-    destinationCountry &&
-    configuredCountryCodes.includes(String(destinationCountry).trim().toLowerCase());
-
-  const isRuralByPostcode =
+  // Determine rural status by configured postcodes only
+  const isRural =
     configuredPostcodes.length > 0 &&
     destinationZip &&
-    configuredPostcodes.includes(String(destinationZip).trim().toLowerCase());
+    configuredPostcodes.includes(destinationZip);
 
-  const isRural = isRuralByCountry || isRuralByPostcode;
-  if (!isRural) return NO_CHANGES;
+  // If there are no configured methods to keep, do nothing to avoid hiding all options inadvertently
+  if (methodsToKeep.length === 0) return NO_CHANGES;
 
-  // For rural addresses: hide any option not in allowlist by handle or title
+  // Behavior:
+  // - Non-rural (default): hide keep-list options so they're not available
+  // - Rural (postcode match): hide all options NOT in the keep list
   const operations = [];
   for (const group of groups) {
     const options = group?.deliveryOptions || [];
+    // If rural: check if there will be at least one keep option; if not, skip hiding to avoid zero-rate checkout
+    if (isRural) {
+      const hasAtLeastOneKeep = options.some((option) => {
+        const handle = String(option?.handle || "").toLowerCase();
+        const title = String(option?.title || "").toLowerCase();
+        return methodsToKeep.includes(handle) || methodsToKeep.includes(title);
+      });
+      if (!hasAtLeastOneKeep) {
+        // Nothing matches keep list; don't hide anything to prevent no-shipping scenario
+        continue;
+      }
+    }
+
     for (const option of options) {
       const handle = String(option?.handle || "").toLowerCase();
       const title = String(option?.title || "").toLowerCase();
-      const keep = methodsToKeep.includes(handle) || methodsToKeep.includes(title);
-      if (!keep && handle) {
-        operations.push({
-          deliveryOptionHide: { deliveryOptionHandle: option.handle },
-        });
-      }
+      const isKeepMethod = methodsToKeep.includes(handle) || methodsToKeep.includes(title);
+
+      const shouldHide = isRural ? !isKeepMethod : isKeepMethod;
+      if (shouldHide && handle) operations.push({ deliveryOptionHide: { deliveryOptionHandle: option.handle } });
     }
   }
 
